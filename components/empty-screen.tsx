@@ -1,49 +1,101 @@
-import { UseChatHelpers } from 'ai/react'
+import { UseChatHelpers, useChat } from 'ai/react'
 
 import { Button } from '@/components/ui/button'
-import { ExternalLink } from '@/components/external-link'
-import { IconArrowRight } from '@/components/ui/icons'
-
-const exampleMessages = [
-  {
-    heading: 'Survival rate',
-    message: `What is the overall survival rate of the passengers?`
-  },
-  {
-    heading: 'Survival rate by class',
-    message: 'How does the survival rate vary by passenger class?'
-  },
-  {
-    heading: 'Age distribution',
-    message: `What is the distribution of ages among the passengers?`
-  }
-]
+import { useFileUpload } from '@/lib/hooks/use-file-upload'
+import { CreateMessage } from 'ai'
+import { Upload } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import React from 'react'
+import toast from 'react-hot-toast'
+import { IconSpinner } from './ui/icons'
 
 export function EmptyScreen({ setInput }: Pick<UseChatHelpers, 'setInput'>) {
-  return (
-    <div className="mx-auto max-w-2xl px-4">
-      <div className="rounded-lg border bg-background p-8">
-        <h1 className="mb-2 text-lg font-semibold">
-          Welcome to the example chatbot!
-        </h1>
-        <p className="mb-2 leading-normal text-muted-foreground">
-          Loaded is the titanic dataset. You can ask questions such as
-        </p>
+  const router = useRouter()
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const { append } = useChat({
+    sendExtraMessageFields: true
+  })
 
-        <div className="mt-4 flex flex-col items-start space-y-2">
-          {exampleMessages.map((message, index) => (
-            <Button
-              key={index}
-              variant="link"
-              className="h-auto p-0 text-base"
-              onClick={() => setInput(message.message)}
-            >
-              <IconArrowRight className="mr-2 text-muted-foreground" />
-              {message.heading}
-            </Button>
-          ))}
+  const { upload, isLoading } = useFileUpload({
+    onError: error => {
+      toast.error(error.message)
+    },
+    onSuccess: async url => {
+      router.refresh()
+
+      await append({
+        role: 'user',
+        content: 'Give me a quick rundown of this data',
+        file: url
+      } as CreateMessage)
+    }
+  })
+
+  return (
+    <>
+      <div className="mx-auto max-w-2xl px-4">
+        <div className="rounded-lg border bg-background p-8 text-center flex items-center flex-col">
+          <div className="mb-4 border rounded-md p-4">
+            <Upload strokeWidth={1.5} />
+          </div>
+
+          <h1 className="mb-2 text-lg font-semibold">Attach a file</h1>
+          <p className="mb-4 leading-normal text-muted-foreground">
+            Upload a file or start a conversation to get started.
+          </p>
+
+          <div>
+            <label htmlFor="file-upload-empty-screen">
+              <Button
+                disabled={isLoading}
+                onClick={e => {
+                  e.preventDefault()
+                  fileInputRef.current?.click()
+                }}
+                size={'sm'}
+              >
+                {isLoading ? (
+                  <IconSpinner className="animate-spin mr-2" />
+                ) : null}
+                Attach file
+              </Button>
+
+              <span className="sr-only">Attach file</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              id="file-upload-empty-screen"
+              type="file"
+              onChange={upload}
+              style={{ display: 'none' }}
+            />
+          </div>
+
+          <button
+            className="mt-4 text-sm text-muted-foreground underline underline-offset-4"
+            onClick={event => {
+              event.preventDefault() // Prevents the default button behavior
+              const url =
+                'https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv'
+              const filename = 'titanic.csv'
+
+              fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                  // Create a temporary URL for the Blob
+                  const blobURL = URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.href = blobURL
+                  link.download = filename
+                  link.click()
+                  URL.revokeObjectURL(blobURL) // Clean up the temporary URL
+                })
+            }}
+          >
+            Download the Titanic sample data
+          </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }

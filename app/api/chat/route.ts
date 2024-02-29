@@ -6,7 +6,9 @@ export const runtime = 'edge'
 
 export async function POST(req: Request) {
   const json = await req.json()
-  const { messages } = json as { messages: Message[] }
+  const { messages, file } = json as { messages: Message[]; file: string }
+
+  console.log(file)
 
   const response = await fetch('https://www.chatcsv.co/api/v1/chat', {
     method: 'POST',

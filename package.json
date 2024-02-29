@@ -30,6 +30,7 @@
     "class-variance-authority": "^0.4.0",
     "clsx": "^1.2.1",
     "focus-trap-react": "^10.1.1",
+    "lucide-react": "^0.343.0",
     "nanoid": "^4.0.2",
     "next": "13.4.7-canary.1",
     "next-themes": "^0.2.1",
